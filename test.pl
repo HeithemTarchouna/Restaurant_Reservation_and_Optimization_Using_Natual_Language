@@ -17,8 +17,6 @@ at --> [].
 month_separator --> ['/'].
 month_separator --> ['-'].
 pm --> [pm].
-pm --> [p.m].
-pm --> ['PM'].
 oclock --> [oclock].
 oclock --> [].
 
@@ -36,12 +34,12 @@ preferably --> [preferably].
 preferably --> [].
 
 % time rules : parse time in 24 hour format while checking it's valid
-%res_time --> [Hour],[':'], [Minute],pm, {convert_to_standard_time(Hour,Minute,StandardHour,StandardMinute) }. % 12 hour format -----> not working
-%res_time --> [Hour],pm, {convert_to_standard_time(Hour,Minute,StandardHour,StandardMinute)}. % 12 hour format / assume 0 -----> not working
 
-res_time --> [Hour], [':'], [Minute], {time(Hour,Minute)}.
-res_time --> [Hour], oclock, {time(Hour,0)}.
+res_time(Hour,Minute) --> [Hour], [':'], [Minute], {time(Hour,Minute)}.
+res_time(Hour,0) --> [Hour], oclock, {time(Hour,0)}.
 
+res_time(S_H,S_M) --> [Hour], [':'], [Minute],pm, {time_pm(Hour,Minute,S_H,S_M)}.% convert to 24 hour format
+res_time(S_H,0) --> [Hour], pm, {time_pm(Hour,0,S_H,0)}.% convert to 24 hour format / assume minute is 0 if not specified
 
 % date rules : parses date while checking it's valid
 res_date(Y,MonthNum,D) --> the,[D],month_separator, [M],month_separator,[Y], {valid_date(Y, M, D,MonthNum)}.
@@ -77,7 +75,7 @@ table_reservation --> party_of,customer_number, people.
 reservation_meal(Meal) --> preferably,for,the,[Meal],{member(Meal,['standard','theatre'])},[menu].
 reservation_meal(standard) --> [].
 
-reservation_time --> preferably,at, res_time.
+reservation_time --> preferably,at, res_time(Hour,Minute).
 
 
 reservation_date --> [on], res_date(Y,M,D).
@@ -91,13 +89,13 @@ reservation_date --> [on], res_date(Y,M,D).
 
 reservation --> table_reservation, reservation_time,reservation_date,reservation_meal(_),done.
 reservation --> table_reservation, reservation_time,reservation_meal(_),reservation_date,done.
+reservation --> table_reservation, reservation_date,reservation_time,reservation_meal(_),done.
+
 
 reservation --> table_reservation,reservation_meal(_), reservation_time,reservation_date,done.
 
 reservation --> table_reservation,reservation_date,reservation_meal(_),reservation_time,done. 
-reservation --> table_reservation,reservation_date,reservation_time,done. % assume meal is standard if not specified
 
-reservation --> table_reservation,reservation_time,reservation_date,done. % assume meal is standard if not specified
 
 %---------------------------------------------------------------------------------------------------------------%
 
@@ -105,10 +103,20 @@ time(Hour, Minute) :-
     integer(Hour),
     Hour >= 19,
     Hour =< 22,
-
     integer(Minute),
     Minute >= 0,
     Minute =< 59.
+
+% tests if valid time (when the restaurant is open) and then converts to 24 hour format and stores it in S_H:S_M : S_H is the hour in 24 hour format and S_M is the minute
+time_pm(Hour, Minute,S_H,S_M) :-
+    integer(Hour),
+    Hour >= 7,
+    Hour =< 10,
+    integer(Minute),
+    Minute >= 0,
+    Minute =< 59,
+    S_H is Hour + 12,
+    S_M = Minute.
 
     
 % convert_to_standard_time(Hour, Minute,StandardHour,StandardMinute): converts Hour:Minute to 24 hour format and stores it in StandardHour:StandardMinute
@@ -118,8 +126,8 @@ convert_to_standard_time(Hour, Minute, StandardHour, StandardMinute) :-
     integer(Minute),
     between(0, 59, Minute),
     StandardHour is Hour + 12,
-    StandardMinute is Minute,
-    time(StandardHour,StandardMinute).
+    StandardMinute = Minute,
+    between(19, 22, StandardHour).
 
 %---------------------------------------------------------------------------------------------------------------%
 
