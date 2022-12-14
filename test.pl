@@ -61,16 +61,17 @@ party_of --> [a,party,of].
 party_of --> [].
 
 for --> [for].
+for --> [of].
 for --> [].
 
+%---------------------------------------------------------------------------------------------------------------%
+
+intro --> [Atom], { member(Atom,[a,table]) }.
+intro --> [Atom], { \+integer(Atom) }.
 
 %---------------------------------------------------------------------------------------------------------------%
-table_reservation --> [Atom], { member(Atom,[a,table]) }, table_reservation.
-table_reservation --> [Atom], { \+integer(Atom) }, table_reservation.
-
 table_reservation --> a,[table],for,party_of, customer_number, people.
-table_reservation --> party_of,customer_number, people.
-
+table_reservation --> for,party_of,customer_number, people.
 
 reservation_meal(Meal) --> preferably,for,the,[Meal],{member(Meal,['standard','theatre'])},[menu].
 reservation_meal(standard) --> [].
@@ -86,7 +87,7 @@ reservation_date --> [on], res_date(Y,M,D).
 
 %---------------------------------------------------------------------------------------------------------------%
 % valid reservations
-
+reservation --> intro,reservation.
 reservation --> table_reservation, reservation_time,reservation_date,reservation_meal(_),done.
 reservation --> table_reservation, reservation_time,reservation_meal(_),reservation_date,done.
 reservation --> table_reservation, reservation_date,reservation_time,reservation_meal(_),done.
@@ -96,6 +97,10 @@ reservation --> table_reservation,reservation_meal(_), reservation_time,reservat
 
 reservation --> table_reservation,reservation_date,reservation_meal(_),reservation_time,done. 
 
+reservation --> reservation_time,reservation_date,reservation_meal(_), done.
+
+
+reservation --> reservation_time,table_reservation,reservation_date,reservation_meal(_),done.
 
 %---------------------------------------------------------------------------------------------------------------%
 
