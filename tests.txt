@@ -1,0 +1,59 @@
+table_reservation([a,table,for,5],[]).
+
+res_date(Y,M,D,[18,march],[]).
+res_date(Y,M,D,[march,18,th],[]).
+res_date(Y,M,D,[18,'/',03],[]).
+res_date(Y,M,D,[the,18,th,of,march],[]).
+res_date(Y,M,D,[march,18],[]).
+res_date(Y,M,D,[18,th,of,march],[]).
+res_date(Y,M,D,[the,1,st,of,october].[]).
+res_date(Y,M,D,[29,th,of,february],[]). => expected false 
+res_date(Y,M,D,[29,th,of,february,of,2024],[]). => expected true
+res_date(Y,M,D,[february,the,2,nd,2023],[]).
+res_date(Y,M,D,[february,the,2,st,2023],[]).
+
+res_time([22],[]).
+reservation_time([preferably,at,20],[]).
+
+table_reservation([a,table,for,3,people],[]).
+table_reservation([please,can,we,have,a,table,for,3],[]).
+reservation_time([at,21,:,00],[]).
+reservation_time([at,19,oclock],[]).
+reservation_date([on,the,17,06,2022],[]).
+reservation_date([on,18,'/',03],[]).
+
+reservation([table, for, 2, at, 20,:,00, on, 18, march,!],[]). 
+reservation([a,table,for,5,preferably,at,20,on,18,'/',03],[]). 
+reservation([please,can,we,have,a,table,for,3,on,march,18,th],[]). 
+reservation([can,i,book,a,table,at,22,:,30,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please],[]).
+reservation([book,6,of,us,in,on,18,march,at,20,':',00],[]).
+
+
+
+
+
+
+
+
+reservation([table,for,2,at,20,':',00,on,18,march],[]). 
+
+reservation([please,can,we,have,a,table,for,3,for,the,theatre,menu,on,march,18,th],[]). ==> missing time
+reservation([please,can,we,have,a,table,for,3,at,21,for,the,theatre,menu,on,march,18,th],[]). 
+
+
+
+reservation([we,would,like,a,table,for,5,preferably,at,8,pm,on,18,'/',03],[]). ===> failed because of the pm format
+
+
+
+
+reservation([can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please],[]). ==> failed because of the pm format
+
+
+
+
+
+
+
+
+
