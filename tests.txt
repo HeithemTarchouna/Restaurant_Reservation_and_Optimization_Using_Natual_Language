@@ -35,6 +35,46 @@ reservation([book,6,of,us,in,on,18,march,at,20,':',00],[]).
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+reservation([at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please],[]). 
+
+reservation_time([at,9,pm],[]).
+edge_table_reservation([for,2,people],[]).
+reservation_date([on,the,18,th,of,march],[]).
+reservation_meal(_,[for,the,standard,menu],[]).
+
+
+reservation --> reservation_time,edge_table_reservation,reservation_date,reservation_meal,done.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 reservation([table,for,2,at,20,':',00,on,18,march],[]). 
 
 reservation([please,can,we,have,a,table,for,3,for,the,theatre,menu,on,march,18,th],[]). ==> missing time
