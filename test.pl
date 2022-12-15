@@ -24,7 +24,7 @@ oclock --> [].
 
 
 % logic rules
-customer_number --> [CustomerNumber], {integer(CustomerNumber)}.
+customer_number(CustomerNumber) --> [CustomerNumber], {integer(CustomerNumber)}.
 done --> ['.'].
 done --> ['!'].
 done --> ['?'].
@@ -32,6 +32,20 @@ done --> ['please'].
 done --> [].
 preferably --> [preferably].
 preferably --> [].
+
+people --> [people].
+people --> [person].
+people --> [of,us,in].
+people --> [].
+party_of --> [a,party,of].
+party_of --> [].
+
+for --> [for].
+for --> [of].
+for --> [].
+
+
+%---------------------------------------------------Helper predicates for time and date-------------------------------%
 
 % time rules : parse time in 24 hour format while checking it's valid
 
@@ -53,33 +67,29 @@ res_date(Y,MonthNum,D) --> [M],the,[D],th,{tomorrow_date(Y,_,_),valid_date(Y, M,
 res_date(Y,MonthNum,D) --> [],{tomorrow_date(Y,MonthNum,D)}. % assume tomorrow if date is not specified
 
 
-people --> [people].
-people --> [person].
-people --> [of,us,in].
-people --> [].
-party_of --> [a,party,of].
-party_of --> [].
 
-for --> [for].
-for --> [of].
-for --> [].
+%---------------------------------------Greetings and booking starters-------------------------------------------%
 
-%---------------------------------------------------------------------------------------------------------------%
-
-intro --> [Atom], { member(Atom,[a,table]) }.
+intro --> [Atom], { member(Atom,[a,at,table]) }.
 intro --> [Atom], { \+integer(Atom) }.
 
 %---------------------------------------------------------------------------------------------------------------%
-table_reservation --> a,[table],for,party_of, customer_number, people.
-table_reservation --> for,party_of,customer_number, people.
+
+
+reservation_time(Hour,Minute) --> preferably,at, res_time(Hour,Minute).
+
+
+reservation_date(Year,Month,Day) --> [on], res_date(Year,Month,Day).
+
+
+table_reservation(Customers_number) --> a,[table],for,party_of, customer_number(Customers_number), people.
+table_reservation(Customers_number) --> for,party_of,customer_number(Customers_number), people.
+
 
 reservation_meal(Meal) --> preferably,for,the,[Meal],{member(Meal,['standard','theatre'])},[menu].
 reservation_meal(standard) --> [].
 
-reservation_time --> preferably,at, res_time(Hour,Minute).
 
-
-reservation_date --> [on], res_date(Y,M,D).
 
 
 
@@ -87,23 +97,23 @@ reservation_date --> [on], res_date(Y,M,D).
 
 %---------------------------------------------------------------------------------------------------------------%
 % valid reservations
-reservation --> intro,reservation.
-reservation --> table_reservation, reservation_time,reservation_date,reservation_meal(_),done.
-reservation --> table_reservation, reservation_time,reservation_meal(_),reservation_date,done.
-reservation --> table_reservation, reservation_date,reservation_time,reservation_meal(_),done.
+reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal]) --> intro,reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal]) .
+reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number), reservation_time(Hour,Minute),reservation_date(Year,Month,Day),reservation_meal(Meal),done.
+reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number), reservation_time(Hour,Minute),reservation_meal(Meal),reservation_date(Year,Month,Day),done.
+reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number), reservation_date(Year,Month,Day),reservation_time(Hour,Minute),reservation_meal(Meal),done.
 
 
-reservation --> table_reservation,reservation_meal(_), reservation_time,reservation_date,done.
+reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number),reservation_meal(Meal), reservation_time(Hour,Minute),reservation_date(Year,Month,Day),done.
 
-reservation --> table_reservation,reservation_date,reservation_meal(_),reservation_time,done. 
-
-reservation --> reservation_time,reservation_date,reservation_meal(_), done.
+reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),reservation_time(Hour,Minute),done. 
 
 
-reservation --> reservation_time,table_reservation,reservation_date,reservation_meal(_),done.
 
-%---------------------------------------------------------------------------------------------------------------%
+reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> reservation_time(Hour,Minute),table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),done.
 
+%------------------------------------Helper predicates for time and time processing------------------------------%
+
+% time predicates
 time(Hour, Minute) :-
     integer(Hour),
     Hour >= 19,
@@ -136,7 +146,7 @@ convert_to_standard_time(Hour, Minute, StandardHour, StandardMinute) :-
 
 %---------------------------------------------------------------------------------------------------------------%
 
-% date rules
+% date predicates
 
 % valid_date(Year, Month, Day) :- checks if Year:Month:Day is a valid date and converts it to MonthNum:Day:Year if the month is specified as an atom.
 valid_date(Year, Month, Day,MonthNum) :-
@@ -203,7 +213,6 @@ month_length(11, 30).
 month_length(12, 31).
 
 
-
 tomorrow_date(Y,M,D) :-
     get_time(Timestamp),
     stamp_date_time(Timestamp, _, local),
@@ -213,6 +222,23 @@ tomorrow_date(Y,M,D) :-
 
 
 today_date(Y,M,D) :-
+
     get_time(Timestamp),
     stamp_date_time(Timestamp, DateTime, local),
     date_time_value(date, DateTime, date(Y,M,D)).
+
+
+
+
+%---------------------------------------------------------------------------------------------------------------%
+% test_dcg
+test_dcg(SMS) :-
+    phrase(reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal]), SMS,[]),
+    write('Hour : '),write(Hour),nl,
+    write('Minute : '),write(Minute),nl,
+    write('Year : '),write(Year),nl,
+    write('Month : '),write(Month),nl,
+    write('Day : '),write(Day),nl,
+    write('Customers_number : '),write(Customers_number),nl,
+    write('Meal : '),write(Meal),nl,!.
+
