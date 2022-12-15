@@ -240,5 +240,5 @@ test_dcg(SMS) :-
     write('Month : '),write(Month),nl,
     write('Day : '),write(Day),nl,
     write('Customers_number : '),write(Customers_number),nl,
-    write('Meal : '),write(Meal),nl,!.
+    write('Meal : '),write(Meal),nl, !. % the reason for this cut here is because we want to stop the program from backtracking and printing the same result multiple times.(the reason for this behaviour is the intro predicate)
 
