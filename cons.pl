@@ -1,146 +1,78 @@
-/*bmsort( X, Y ) :- perm( X, Y ),
-    format('Try ~w\n',[Y]),
-    ord( Y ).
+module( stacking, [store_boxes/1, constrain_boxes/3, link_boxes/1, box/2] ).
+:- use_module([library(clpfd),library(lists)]).
+:- expects_dialect( sicstus ).
+
+% The table/2 predicate defines the number of seats for each table
+table(1, 2).
+table(2, 3).
+table(3, 4).
+
+% The duration/2 predicate defines the duration of each meal type
+duration(standard, 60).
+duration(theater, 30).
+
+% reservation predicate
+reservation([StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
+  % reservation opening time is 19:00 and closing time is 23:00
+  % 19:00 = 19*60 + 0 = 1140
+  % 23:00 = 23*60 + 0 = 1380
+  StartHour in 19..23,
+  StartMinute in 0..59,
+  TimeInMinutes #= StartHour*60 + StartMinute,
+  % meal type is either standard or theater
+  member(MealType, [standard, theater]),
+  % number of people is between 1 and 4 (inclusive)
+  NumberOfPeople in 1..4,
+  % table number is between 1 and 3 (inclusive)
+  TableNumber in 1..3,
+  % the number of people must be less than or equal to the number of seats for the table
+  table(TableNumber, NumberOfSeats),
+  NumberOfPeople #=< NumberOfSeats,
+  % the duration of the meal must be less than or equal to the time left before closing time
+  duration(MealType, Duration),
+  ExpectedEnd #= TimeInMinutes + Duration,
+  ExpectedEnd #=< 1380,
+  label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
 
 
-ord( [] ).
-ord( [_] ).
+no_intersections(S1, E1, S2, E2) :-
+  S1 #< S2,
+  E1 #< E2,
+  S1 #< E1,
+  S2 #< E2.
 
-ord( [H1,H2|T] ) :-
-    H1 =< H2,
-    ord( [H2|T] ).
+no_intersections(S1, E1, S2, E2) :-
+  S1 #> S2,E1 #> E2,
+  S1 #< E1,
+  S2 #< E2.
 
-
-perm( [], [] ).
-perm( [[X]|Y], [U|V] ) :- 
-    del( U, [X|Y], W ),
-    perm( W, V ).
-
-del( X, [X|Y], Y ).
-del( X, [Y|U], [Y|V] ) :- 
-    del( X, U, V ).*/
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Sudoku with Constraint Logic Programming
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-:- use_module(library(clpfd)).
-% Represent a sudoku grid as a matrix, i.e. list of lists.
-problem(1, [[1,_,_,8,_,4,_,_,_],
-            [_,2,_,_,_,_,4,5,6],
-            [_,_,3,2,_,5,_,_,_],
-            [_,_,_,4,_,_,8,_,5],
-            [7,8,9,_,5,_,_,_,_],
-            [_,_,_,_,_,6,2,_,3],
-            [8,_,1,_,_,_,7,_,_],
-            [_,_,_,1,2,3,_,8,_],
-            [2,_,5,_,_,_,_,_,9]]).
-problem(2, [[_,_,2,_,3,_,1,_,_],
-            [_,4,_,_,_,_,_,3,_],
-            [1,_,5,_,_,_,_,8,2],
-            [_,_,_,2,_,_,6,5,_],
-            [9,_,_,_,8,7,_,_,3],
-            [_,_,_,_,4,_,_,_,_],
-            [8,_,_,_,7,_,_,_,4],
-            [_,9,3,1,_,_,_,6,_],
-            [_,_,7,_,6,_,5,_,_]]).
-problem(3, [[1,_,_,_,_,_,_,_,_],
-            [_,_,2,7,4,_,_,_,_],
-            [_,_,_,5,_,_,_,_,4],
-            [_,3,_,_,_,_,_,_,_],
-            [7,5,_,_,_,_,_,_,_],
-            [_,_,_,_,_,9,6,_,_],
-            [_,4,_,_,_,6,_,_,_],
-            [_,_,_,_,_,_,_,7,1],
-            [_,_,_,_,_,1,_,3,_]]).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Constraining the sudoku
-% Apply sudoku constraints to Grid.
-sudoku(Grid) :-
-  valid_grid(Grid),
-  constrain_cells(Grid),
-  constrain_rows(Grid),
-  constrain_columns(Grid),
-  constrain_blocks(Grid).
-% Assume that Grid is 9x9
-valid_grid(Grid) :-
-  length(Grid, 9),                    % There are 9 rows
-  maplist(same_length(Grid), Grid).   % and 9 columns
-% All cells of Grid must be any of 1 through 9
-constrain_cells(Grid) :-
-  append(Grid, AllCells),             % Flatten the matrix to a list
-  AllCells ins 1..9.                  
-% All cells in a row of Grid must be different
-constrain_rows(Grid) :-
-  maplist(all_distinct, Grid).        
-% All cells in a column of Grid must be different
-constrain_columns(Grid) :-
-  transpose(Grid, Columns),           % Get the columns
-  maplist(all_distinct, Columns).
-% All cells in a block of Grid must be different
-constrain_blocks([As, Bs, Cs, Ds, Es, Fs, Gs, Hs, Is]) :-
-  constrain_block(As, Bs, Cs),        
-  constrain_block(Ds, Es, Fs),        % Split rows into blocks
-  constrain_block(Gs, Hs, Is).
-constrain_block([], [], []).
-constrain_block([N1, N2, N3|Ns1],     
-                [N4, N5, N6|Ns2],     % Get the first block
-                [N7, N8, N9|Ns3]) :-           
-  all_distinct([N1, N2, N3,           
-                N4, N5, N6,
-                N7, N8, N9]),
-  constrain_block(Ns1, Ns2, Ns3).     % Do the rest
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Run and display the sudoku
-do_sudoku(Problem) :-
-  problem(Problem, Grid),
-  display_grid(before, Grid),
-  sudoku(Grid),                       % Apply the constraints
-  maplist(labeling([ff]), Grid),      % Labeling removes all residues
-  display_grid(after, Grid).
-% Print grid
-display_grid(Title, Grid) :-
-  format('~k', Title),
-  append(Grid, AllCells),
-  format('
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k
-          \r\t~k ~k ~k ~k ~k ~k ~k ~k ~k~n',
-    AllCells).
+% Schedule all reservations that overlap to different tables
+schedule(AllReservations) :-
+  maplist(reservation, AllReservations),
+  % For all pairs of reservations, check if they overlap in time
+  % and, if they do, ensure that they are assigned to different tables
+  forall(combination(2, AllReservations, [Reservation1, Reservation2]),
+         ( Reservation1 = [_, _, TimeInMinutes1, ExpectedEnd1, _, _, TableNumber1],
+           Reservation2 = [_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
+           ( TimeInMinutes1 #=< ExpectedEnd2, ExpectedEnd1 #>= TimeInMinutes2
+             -> TableNumber1 #\= TableNumber2
+             ;  true
+           )
+         )).
 
 
-%test(X) :- X in 1 .. 10 ,indomain(X).
+         combination(0, _, []).
+        combination(N, [X|Xs], [X|Ys]) :-
+          N > 0,
+          N1 is N - 1,
+          combination(N1, Xs, Ys).
+        combination(N, [_|Xs], Ys) :-
+          N > 0,
+          combination(N, Xs, Ys).
 
+test(Reservations) :-
+  schedule(Reservations).
 
-
-
-:- use_module(library(clpfd)).
-
-% we need to allow a carrying slot
-add( A, B, C ) :-
-    add( A, B, C, 0 ).
-    
-
-
-% add numbers rep'd as lists of digits
-add( [], [], [], 0 ).
-add( [A|As], [B|Bs], [C|Cs], Carry ) :-
-    A in 0..9,
-    B in 0..9,
-    C #= ( A + B + NextCarry ) mod 10,
-    Carry #= div( A + B + NextCarry, 10 ),
-    add( As, Bs, Cs, NextCarry ).
-
-
-test(S,E,N,D,M,O,R,Y) :-
-    add( [0,S,E,N,D], [0,M,O,R,E], Sum ),
-    Sum = [M,O,N,E,Y],
-    all_different( [S,E,N,D,M,O,R,Y] ),
-    labeling( [], [S,E,N,D,M,O,R,Y] ).
+test(Reservations) :-
+  schedule(Reservations).
+/*update my code to ensure that all reservations that overlap in terms of time are not assigned to the same table during that peroid*/

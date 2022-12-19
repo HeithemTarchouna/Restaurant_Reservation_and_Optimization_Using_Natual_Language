@@ -1,5 +1,6 @@
 
 :- use_module(library(date_time)). % use pack_install(date_time). to install this external library
+:- use_module(library(clpfd)).
 
 % lexical rules
 a --> [a].
@@ -240,5 +241,42 @@ test_dcg(SMS) :-
     write('Month : '),write(Month),nl,
     write('Day : '),write(Day),nl,
     write('Customers_number : '),write(Customers_number),nl,
-    write('Meal : '),write(Meal),nl, !. % the reason for this cut here is because we want to stop the program from backtracking and printing the same result multiple times.(the reason for this behaviour is the intro predicate)
+    write('Meal : '),write(Meal),nl, !. % the reason for this cut here is because we want to stop the program from backtracking and printing the same result multiple times.(the reason for this behaviour is the reservation predicate is recursive, so it can continue looking for more matches until the intro words are all found.)
 
+%---------------------------------------------------------------------------------------------------------------%
+restaurant_representation(Table1,Table2,Table3):-
+    length(Table1,2),
+    length(Table2,3),
+    length(Table3,4).
+%---------------------------------------------------------------------------------------------------------------%
+
+% meal_duration(Meal,Duration) :- stores the duration of each meal in hours
+meal_duration(standard,2).
+meal_duration(theatre,1).
+
+% restaurant_working_hours(Open,Close) :- stores the opening and closing hours of the restaurant
+restaurant_working_hours(time(19,00),time(23,00)).
+
+% converts a time to minutes
+convert_to_minutes(Hour,Minute,Minutes) :-
+    Minutes #= Hour*60 + Minute.
+
+%---------------------------------------------------------------------------------------------------------------%
+% schedule repressentation
+% dictionary {}, where the key is the date
+% and the value is the schedule for that date
+% the schedule is a set, where each elemt a list of 3 elements (the 3 tables)
+% each table is represented as a list of 240 elements
+% table(1,List):-
+%     length(List,240).
+% table(2,List):-
+%     length(List,240).
+% table(3,List):-
+%     length(List,240).
+% max_table_size(1,2).
+% max_table_size(2,3).
+% max_table_size(3,4).
+
+% after that we want to implement a constraint system that maximizes the number of reservations per day when receiving similar requests:
+% [table,for,2,at,20,':',00,on,18,march]
+% [can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]
