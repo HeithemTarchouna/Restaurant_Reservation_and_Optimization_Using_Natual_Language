@@ -35,16 +35,12 @@ reservation([StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, Numbe
   label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
 
 
-no_intersections(S1, E1, S2, E2) :-
-  S1 #< S2,
-  E1 #< E2,
-  S1 #< E1,
-  S2 #< E2.
 
-no_intersections(S1, E1, S2, E2) :-
-  S1 #> S2,E1 #> E2,
-  S1 #< E1,
-  S2 #< E2.
+
+
+overlap(S1, E1, S2, E2) :-
+  S1 #=< E2, E1 #>= S2.
+
 
 % Schedule all reservations that overlap to different tables
 schedule(AllReservations) :-
@@ -54,11 +50,15 @@ schedule(AllReservations) :-
   forall(combination(2, AllReservations, [Reservation1, Reservation2]),
          ( Reservation1 = [_, _, TimeInMinutes1, ExpectedEnd1, _, _, TableNumber1],
            Reservation2 = [_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
-           ( TimeInMinutes1 #=< ExpectedEnd2, ExpectedEnd1 #>= TimeInMinutes2
+           ( overlap(TimeInMinutes1, ExpectedEnd1, TimeInMinutes2, ExpectedEnd2)
              -> TableNumber1 #\= TableNumber2
              ;  true
            )
-         )).
+         )
+         
+         
+         
+         ).
 
 
          combination(0, _, []).
