@@ -88,7 +88,7 @@ table_reservation(Customers_number) --> a,[table],for,party_of, customer_number(
 table_reservation(Customers_number) --> for,party_of,customer_number(Customers_number), people.
 
 
-reservation_meal(Meal) --> preferably,for,the,[Meal],{member(Meal,['standard','theatre'])},[menu].
+reservation_meal(Meal) --> preferably,for,the,[Meal],{member(Meal,['standard','theater'])},[menu].
 reservation_meal(standard) --> [].
 
 
