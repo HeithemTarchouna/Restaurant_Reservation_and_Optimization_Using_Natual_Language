@@ -12,7 +12,7 @@ duration(standard, 60).
 duration(theater, 30).
 
 % reservation predicate
-reservation([StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
+reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
   % reservation opening time is 19:00 and closing time is 23:00
   % 19:00 = 19*60 + 0 = 1140
   % 23:00 = 23*60 + 0 = 1380
@@ -38,7 +38,7 @@ reservation([StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, Numbe
 
 
 % The overlap/4 predicate checks if two reservations overlap in time
-overlap(Start1, End1, Start2, End2) :-
+overlap(Year,Month,Day,Start1, End1,Year,Month,Day, Start2, End2) :-
   Start1 #=< End2, End1 #>= Start2.
 
 
@@ -54,15 +54,15 @@ schedule(AllReservations) :-
 
 % Ensure that all reservations that overlap in terms of time are not assigned to the same table during that peroid
 ensure_tables(AllReservations, [Reservation1, Reservation2]) :-
-    Reservation1 = [_, _, TimeInMinutes1, ExpectedEnd1, _, _, TableNumber1],
-    Reservation2 = [_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
-    overlap(TimeInMinutes1, ExpectedEnd1, TimeInMinutes2, ExpectedEnd2),
+    Reservation1 = [Year1,Month1,Day1,_, _, TimeInMinutes1, ExpectedEnd1, _, _, TableNumber1],
+    Reservation2 = [Year2,Month2,Day2,_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
+    overlap(Year1,Month1,Day1,TimeInMinutes1, ExpectedEnd1,Year2,Month2,Day2, TimeInMinutes2, ExpectedEnd2),
     TableNumber1 #\= TableNumber2.
 % if two tables don't overlap, then they can be assigned to the same table
 ensure_tables(AllReservations, [Reservation1, Reservation2]) :-
-      Reservation1 = [_, _, TimeInMinutes1, ExpectedEnd1, _, _, TableNumber1],
-      Reservation2 = [_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
-      \+overlap(TimeInMinutes1, ExpectedEnd1, TimeInMinutes2, ExpectedEnd2).
+    Reservation1 = [Year1,Month1,Day1,_, _, TimeInMinutes1, ExpectedEnd1, _, _, TableNumber1],
+    Reservation2 = [Year2,Month2,Day2,_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
+      \+overlap(Year1,Month1,Day1,TimeInMinutes1, ExpectedEnd1,Year2,Month2,Day2, TimeInMinutes2, ExpectedEnd2).
 
 combination(0, _, []).
 combination(N, [X|Xs], [X|Ys]) :-
@@ -78,11 +78,14 @@ combination(N, [X|Xs], [X|Ys]) :-
 
 
     test(Reservations, MaxList) :-
+      % https://stackoverflow.com/questions/8231762/swi-prolog-show-long-list 
+      set_prolog_flag(answer_write_options,[max_depth(0)]), % disable answer depth limit for printing the whole results
+      % actual code
       subseq0(Reservations, MaxList),
       maplist(reservation, MaxList),
       schedule(MaxList),
       total_seats(MaxList, TotalSeats),
-      findall(Var, member([_, _, _, _, _, _, Var], MaxList), Vars),
+      findall(Var, member([_,_,_,_, _, _, _, _, _, Var], MaxList), Vars),
       labeling([max(TotalSeats)], Vars).
   
   total_seats(Reservations, TotalSeats) :-
@@ -90,7 +93,7 @@ combination(N, [X|Xs], [X|Ys]) :-
     sumlist(Seats, TotalSeats).
   
   number_of_seats(Reservation, NumberOfSeats) :-
-    Reservation = [_, _, _, _, _, NumberOfSeats, _].
+    Reservation = [_,_,_,_, _, _, _, _, NumberOfSeats, _].
 
 % subseq0(List, Subsets): true if Subsets is a subset of List
 %https://stackoverflow.com/questions/4912869/subsets-in-prolog
@@ -102,3 +105,5 @@ subseq1([_|Tail], Rest) :-
    subseq0(Tail, Rest).
 subseq1([Head|Tail], [Head|Rest]) :-
    subseq1(Tail, Rest).
+
+   %test([[2021,06,17,19,20,Start,End,theater,2,Table2],[2021,06,17,X,Y,Start2,End2,standard,2,Table]],Reservation).
