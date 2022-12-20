@@ -78,7 +78,7 @@ combination(N, [X|Xs], [X|Ys]) :-
 
 
 test(Reservations,MaxList) :-
-  getOptimal(Reservations,MaxList),
+  getOptimal(Reservations,MaxList), 
   schedule(MaxList).
   %labeling(max(Sum),[Sum]). % the cut is used to stop the search after the first optimal is found, if you backtrack you get the second best and so on.
 
