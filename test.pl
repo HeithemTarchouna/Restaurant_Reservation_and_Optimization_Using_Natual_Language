@@ -55,6 +55,7 @@ res_time(Hour,0) --> [Hour], oclock, {time(Hour,0)}.
 
 res_time(S_H,S_M) --> [Hour], [':'], [Minute],pm, {time_pm(Hour,Minute,S_H,S_M)}.% convert to 24 hour format
 res_time(S_H,0) --> [Hour], pm, {time_pm(Hour,0,S_H,0)}.% convert to 24 hour format / assume minute is 0 if not specified
+res_time(S_H,S_M) --> []. 
 
 % date rules : parses date while checking it's valid
 res_date(Y,MonthNum,D) --> the,[D],month_separator, [M],month_separator,[Y], {valid_date(Y, M, D,MonthNum)}.
@@ -98,19 +99,19 @@ reservation_meal(standard) --> [].
 
 %---------------------------------------------------------------------------------------------------------------%
 % valid reservations
-reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal]) --> intro,reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal]) .
-reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number), reservation_time(Hour,Minute),reservation_date(Year,Month,Day),reservation_meal(Meal),done.
-reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number), reservation_time(Hour,Minute),reservation_meal(Meal),reservation_date(Year,Month,Day),done.
-reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number), reservation_date(Year,Month,Day),reservation_time(Hour,Minute),reservation_meal(Meal),done.
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]) --> intro,reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]) .
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> table_reservation(Customers_number), reservation_time(Hour,Minute),reservation_date(Year,Month,Day),reservation_meal(Meal),done.
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> table_reservation(Customers_number), reservation_time(Hour,Minute),reservation_meal(Meal),reservation_date(Year,Month,Day),done.
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> table_reservation(Customers_number), reservation_date(Year,Month,Day),reservation_time(Hour,Minute),reservation_meal(Meal),done.
 
 
-reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number),reservation_meal(Meal), reservation_time(Hour,Minute),reservation_date(Year,Month,Day),done.
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> table_reservation(Customers_number),reservation_meal(Meal), reservation_time(Hour,Minute),reservation_date(Year,Month,Day),done.
 
-reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),reservation_time(Hour,Minute),done. 
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),reservation_time(Hour,Minute),done. 
 
 
 
-reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal])  --> reservation_time(Hour,Minute),table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),done.
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> reservation_time(Hour,Minute),table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),done.
 
 %------------------------------------Helper predicates for time and time processing------------------------------%
 
@@ -233,8 +234,10 @@ today_date(Y,M,D) :-
 
 %---------------------------------------------------------------------------------------------------------------%
 % test_dcg
-test_dcg(SMS) :-
-    phrase(reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal]), SMS,[]),
+
+
+test_dcg(SMS,[Year,Month,Day,Hour, Minute, TimeInMinutes, ExpectedEnd, Meal, Customers_number, TableNumber]) :-
+    phrase(reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]), SMS,[]),
     write('Hour : '),write(Hour),nl,
     write('Minute : '),write(Minute),nl,
     write('Year : '),write(Year),nl,
@@ -244,3 +247,4 @@ test_dcg(SMS) :-
     write('Meal : '),write(Meal),nl, !. % the reason for this cut here is because we want to stop the program from backtracking and printing the same result multiple times.(the reason for this behaviour is the reservation predicate is recursive, so it can continue looking for more matches until the intro words are all found.)
 
 %---------------------------------------------------------------------------------------------------------------%
+%reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal],[please,can,we,have,a,table,for,3,for,the,theatre,menu,on,march,18,th],[]).
