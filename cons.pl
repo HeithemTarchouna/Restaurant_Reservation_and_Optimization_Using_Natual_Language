@@ -37,9 +37,9 @@ reservation([StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, Numbe
 
 
 
-
-overlap(S1, E1, S2, E2) :-
-  S1 #=< E2, E1 #>= S2.
+% The overlap/4 predicate checks if two reservations overlap in time
+overlap(Start1, End1, Start2, End2) :-
+  Start1 #=< End2, End1 #>= Start2.
 
 
 % Schedule all reservations that overlap to different tables
@@ -64,7 +64,6 @@ ensure_tables(AllReservations, [Reservation1, Reservation2]) :-
       Reservation2 = [_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
       \+overlap(TimeInMinutes1, ExpectedEnd1, TimeInMinutes2, ExpectedEnd2).
 
-
 combination(0, _, []).
 combination(N, [X|Xs], [X|Ys]) :-
   N > 0,
@@ -74,9 +73,14 @@ combination(N, [X|Xs], [X|Ys]) :-
   N > 0,
   combination(N, Xs, Ys).
 
-test(Reservations) :-
-  schedule(Reservations).
+
+
+
 
 test(Reservations) :-
   schedule(Reservations).
-/*update my code to ensure that all reservations that overlap in terms of time are not assigned to the same table during that peroid*/
+
+
+
+/*  update my code to always select the subset of reservations that maximizes the sum of number of seats.
+don't use the predicate maximize */
