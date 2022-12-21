@@ -255,7 +255,9 @@ test_dcg_list(SMSList,ResultList) :-
     maplist(test_dcg,SMSList,ResultList).
 
 
-    module( stacking, [store_boxes/1, constrain_boxes/3, link_boxes/1, box/2] ).
+%---------------------------------------------------------------------------------------------------------------%
+
+ %Constrint system module and  reservation scheduler
 
 % The table/2 predicate defines the number of seats for each table
 table(1, 2).
@@ -266,7 +268,7 @@ table(3, 4).
 duration(standard, 60).
 duration(theater, 30).
 
-% reservation predicate
+% reservation predicate is going to be used as a datastructure for storing the reservation information : it also contains the constraints for the reservations information.
 reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
   % reservation opening time is 19:00 and closing time is 23:00
   % 19:00 = 19*60 + 0 = 1140
@@ -290,11 +292,14 @@ reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, 
   label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
 
 
-
+ % this is a datastrucutre for storing the reservations  (list of reservation list)
   reservations(AllReservations):-
     maplist(reservation, AllReservations).
     
 
+
+% ---------------------------------------------------------------------------------------------------------------%
+% scheduler module : this module is going to be used for scheduling the reservations
 
 
 % The overlap/4 predicate checks if two reservations overlap in time
@@ -362,10 +367,13 @@ subseq1([_|Tail], Rest) :-
 subseq1([Head|Tail], [Head|Rest]) :-
  subseq1(Tail, Rest).
 
+
+% ---------------------------------------------------------------------------------------------------------------%
+
  %test([[2021,06,17,19,20,Start,End,theater,2,Table2],[2021,06,17,X,Y,Start2,End2,standard,2,Table]],Reservation).
 
 
-
+% a predicate to convert the list of reservations to a list of readable reservations that are displayed to the user
 readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Meal,NumberOfPeople,TableNumber],[date(Year,Month,Day),start_Time(Hour,Minute),end_Time(EndHour,EndMinute),meal(Meal),numberOfCustomers(NumberOfPeople),tableNumber(TableNumber)]) :-
     
     EndHour #= StartInMinutes // 60,
@@ -376,7 +384,11 @@ readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Mea
 
 
 
-
+% ---------------------------------------------------------------------------------------------------------------%
+% test module : this module is going to be used for testing the scheduler module
+% combines all code together
+% uses the test_dcg_list predicate to convert the list of sms to a list of reservations
+% which can then be used by the scheduler module
 full_test(SMSList,BestSchedule):-
     test_dcg_list(SMSList,AllReservations),
     test(AllReservations,OptimalReservations),
