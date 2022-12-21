@@ -366,13 +366,20 @@ subseq1([Head|Tail], [Head|Rest]) :-
 
 
 
+readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Meal,NumberOfPeople,TableNumber],[date(Year,Month,Day),start_Time(Hour,Minute),end_Time(EndHour,EndMinute),meal(Meal),numberOfCustomers(NumberOfPeople),tableNumber(TableNumber)]) :-
+    
+    EndHour #= StartInMinutes // 60,
+    EndMinute #= EndInMinutes mod 60.
 
 
 
 
 
-full_test(SMSList,OptimalReservations):-
+
+
+full_test(SMSList,BestSchedule):-
     test_dcg_list(SMSList,AllReservations),
-    test(AllReservations,OptimalReservations).
+    test(AllReservations,OptimalReservations),
+    maplist(readable_reservation,OptimalReservations,BestSchedule).
 
 %full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
