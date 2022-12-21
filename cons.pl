@@ -36,6 +36,11 @@ reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, 
 
 
 
+  reservations(AllReservations):-
+    maplist(reservation, AllReservations).
+    
+
+
 
 % The overlap/4 predicate checks if two reservations overlap in time
 overlap(Year,Month,Day,Start1, End1,Year,Month,Day, Start2, End2) :-
@@ -44,7 +49,7 @@ overlap(Year,Month,Day,Start1, End1,Year,Month,Day, Start2, End2) :-
 
 % Schedule all reservations that overlap to different tables
 schedule(AllReservations) :-
-  maplist(reservation, AllReservations),
+  reservations(AllReservations),
   % For all pairs of reservations, check if they overlap in time
   % and, if they do, ensure that they are assigned to different tables
   forall(combination(2, AllReservations, [Reservation1, Reservation2]),
@@ -82,7 +87,7 @@ combination(N, [X|Xs], [X|Ys]) :-
       set_prolog_flag(answer_write_options,[max_depth(0)]), % disable answer depth limit for printing the whole results
       % actual code
       subseq0(Reservations, MaxList),
-      maplist(reservation, MaxList),
+      reservations(MaxList),
       schedule(MaxList),
       total_seats(MaxList, TotalSeats),
       findall(Var, member([_,_,_,_, _, _, _, _, _, Var], MaxList), Vars),
@@ -107,3 +112,13 @@ subseq1([Head|Tail], [Head|Rest]) :-
    subseq1(Tail, Rest).
 
    %test([[2021,06,17,19,20,Start,End,theater,2,Table2],[2021,06,17,X,Y,Start2,End2,standard,2,Table]],Reservation).
+
+
+
+
+
+
+
+
+
+   
