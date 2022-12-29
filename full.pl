@@ -20,6 +20,7 @@ at --> [].
 month_separator --> ['/'].
 month_separator --> ['-'].
 pm --> [pm].
+pm --> [].
 oclock --> [oclock].
 oclock --> [].
 
@@ -45,6 +46,7 @@ party_of --> [].
 
 for --> [for].
 for --> [of].
+for --> [a].
 for --> [].
 
 
@@ -53,7 +55,10 @@ for --> [].
 % time rules : parse time in 24 hour format while checking it's valid
 
 res_time(Hour,Minute) --> [Hour], [':'], [Minute], {time(Hour,Minute)}.
+res_time(S_H,S_M) --> [Hour], [':'], [Minute], {time_pm(Hour,Minute,S_H,S_M)}.
+
 res_time(Hour,0) --> [Hour], oclock, {time(Hour,0)}.
+res_time(S_H,0) --> [Hour],pm, oclock,pm, {time_pm(Hour,0,S_H,0)}.
 
 res_time(S_H,S_M) --> [Hour], [':'], [Minute],pm, {time_pm(Hour,Minute,S_H,S_M)}.% convert to 24 hour format
 res_time(S_H,0) --> [Hour], pm, {time_pm(Hour,0,S_H,0)}.% convert to 24 hour format / assume minute is 0 if not specified
@@ -78,7 +83,9 @@ intro --> [Atom], { member(Atom,[a,at,table]) }.
 intro --> [Atom], { \+integer(Atom) }.
 
 %---------------------------------------------------------------------------------------------------------------%
-
+%table_reservation(T,[a,table,for,3,people],[]).
+%table_reservation(T,[a,table,for,3],[]).   
+%table_reservation(T,[a,table, for, 3],[]).  
 
 reservation_time(Hour,Minute) --> preferably,at, res_time(Hour,Minute).
 
@@ -111,29 +118,30 @@ reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> table_reser
 
 reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),reservation_time(Hour,Minute),done. 
 
-
-
 reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> reservation_time(Hour,Minute),table_reservation(Customers_number),reservation_date(Year,Month,Day),reservation_meal(Meal),done.
+reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> a,[table],reservation_date(Year,Month,Day),for,party_of,customer_number(Customers_number), people,at,res_time(Hour,Minute),reservation_meal(Meal),done.
+
 
 %------------------------------------Helper predicates for time and time processing------------------------------%
 
 % time predicates
 time(Hour, Minute) :-
     integer(Hour),
-    Hour >= 19,
-    Hour =< 22,
+    %Hour >= 19,
+    %Hour =< 22,
     integer(Minute),
-    Minute >= 0,
-    Minute =< 59.
+    Hour >= 12.
+    %Minute >= 0,
+    %Minute =< 59.
 
 % tests if valid time (when the restaurant is open) and then converts to 24 hour format and stores it in S_H:S_M : S_H is the hour in 24 hour format and S_M is the minute
 time_pm(Hour, Minute,S_H,S_M) :-
     integer(Hour),
-    Hour >= 7,
-    Hour =< 10,
+    %Hour >= 7,
+    Hour =< 12,
     integer(Minute),
-    Minute >= 0,
-    Minute =< 59,
+    %Minute >= 0,
+    %Minute =< 59,
     S_H is Hour + 12,
     S_M = Minute.
 
@@ -239,14 +247,14 @@ today_date(Y,M,D) :-
 
 
 test_dcg(SMS,[Year,Month,Day,Hour, Minute, TimeInMinutes, ExpectedEnd, Meal, Customers_number, TableNumber]) :-
-    phrase(reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]), SMS,[]),
-    write('Hour : '),write(Hour),nl,
-    write('Minute : '),write(Minute),nl,
-    write('Year : '),write(Year),nl,
-    write('Month : '),write(Month),nl,
-    write('Day : '),write(Day),nl,
-    write('Customers_number : '),write(Customers_number),nl,
-    write('Meal : '),write(Meal),nl, !. % the reason for this cut here is because we want to stop the program from backtracking and printing the same result multiple times.(the reason for this behaviour is the reservation predicate is recursive, so it can continue looking for more matches until the intro words are all found.)
+    phrase(reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]), SMS,[]).
+    %write('Hour : '),write(Hour),nl,
+    %write('Minute : '),write(Minute),nl,
+    %write('Year : '),write(Year),nl,
+    %write('Month : '),write(Month),nl,
+    %write('Day : '),write(Day),nl,
+    %write('Customers_number : '),write(Customers_number),nl,
+    %write('Meal : '),write(Meal),nl, !. % the reason for this cut here is because we want to stop the program from backtracking and printing the same result multiple times.(the reason for this behaviour is the reservation predicate is recursive, so it can continue looking for more matches until the intro words are all found.)
 
 %---------------------------------------------------------------------------------------------------------------%
 %reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal],[please,can,we,have,a,table,for,3,for,the,theatre,menu,on,march,18,th],[]).
@@ -357,6 +365,7 @@ number_of_seats(Reservation, NumberOfSeats) :-
   Reservation = [_,_,_,_, _, _, _, _, NumberOfSeats, _].
 
 % subseq0(List, Subsets): true if Subsets is a subset of List
+% credits to 
 %https://stackoverflow.com/questions/4912869/subsets-in-prolog
 subseq0(List, List).
 subseq0(List, Rest) :-
@@ -376,8 +385,10 @@ subseq1([Head|Tail], [Head|Rest]) :-
 % a predicate to convert the list of reservations to a list of readable reservations that are displayed to the user
 readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Meal,NumberOfPeople,TableNumber],[date(Year,Month,Day),start_Time(Hour,Minute),end_Time(EndHour,EndMinute),meal(Meal),numberOfCustomers(NumberOfPeople),tableNumber(TableNumber)]) :-
     
-    EndHour #= StartInMinutes // 60,
-    EndMinute #= EndInMinutes mod 60.
+    EndHour #= EndInMinutes // 60,
+    EndMinute #= EndInMinutes mod 60,
+    format(' ~w | between : ~w and ~w | for the ~w menu | on table ~w |for ~w customers  ~n~n',[date(Year,Month,Day) , start_Time(Hour,Minute), end_Time(EndHour,EndMinute),Meal,TableNumber,NumberOfPeople]), nl.
+    
 
 
 
@@ -390,8 +401,14 @@ readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Mea
 % uses the test_dcg_list predicate to convert the list of sms to a list of reservations
 % which can then be used by the scheduler module
 full_test(SMSList,BestSchedule):-
+    write('The best schedule is : '),nl,
+    write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
+
     test_dcg_list(SMSList,AllReservations),
     test(AllReservations,OptimalReservations),
-    maplist(readable_reservation,OptimalReservations,BestSchedule).
+    maplist(readable_reservation,OptimalReservations,BestSchedule),
+    write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
+    !. % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
 
+%full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
 %full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
