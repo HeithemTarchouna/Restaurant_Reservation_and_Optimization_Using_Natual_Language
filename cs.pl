@@ -274,6 +274,17 @@ overlap(Year,Month,Day,Start1, End1,Year,Month,Day, Start2, End2) :-
   Start1 #=< End2, End1 #>= Start2.
 
 
+
+% https://stackoverflow.com/questions/53668887/a-combination-of-a-list-given-a-length-followed-by-a-permutation-in-prolog  credit to the author
+combination(0, _, []).
+combination(N, [X|Xs], [X|Ys]) :-
+  N > 0,
+  N1 is N - 1,
+  combination(N1, Xs, Ys).
+  combination(N, [_|Xs], Ys) :-
+  N > 0,
+  combination(N, Xs, Ys).
+
 % Schedule all reservations that overlap to different tables
 schedule(AllReservations) :-
   reservations(AllReservations),
@@ -296,15 +307,7 @@ ensure_tables(AllReservations, [Reservation1, Reservation2]) :-
     Reservation2 = [Year2,Month2,Day2,_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
       \+overlap(Year1,Month1,Day1,TimeInMinutes1, ExpectedEnd1,Year2,Month2,Day2, TimeInMinutes2, ExpectedEnd2).
 
-% https://stackoverflow.com/questions/53668887/a-combination-of-a-list-given-a-length-followed-by-a-permutation-in-prolog  credit to the author
-combination(0, _, []).
-combination(N, [X|Xs], [X|Ys]) :-
-  N > 0,
-  N1 is N - 1,
-  combination(N1, Xs, Ys).
-  combination(N, [_|Xs], Ys) :-
-  N > 0,
-  combination(N, Xs, Ys).
+
 
 % subseq0(List, Subsets): true if Subsets is a subset of List
 % credits to 
@@ -355,21 +358,20 @@ test_dcg(SMS,[Year,Month,Day,Hour, Minute, TimeInMinutes, ExpectedEnd, Meal, Cus
       
   
 test_dcg_list(SMSList,ResultList) :-
-      maplist(test_dcg,SMSList,ResultList).% prevent backtracking and getting the same answer multiple times
+      maplist(test_dcg,SMSList,ResultList).
   
-
-
-
-
 test_constraints(SMSList,AllReservations,BestSchedule):-
     % this scheduler tries to fit as many reservations as possible in the schedule.
     test_dcg_list(SMSList,AllReservations),
     valid_reservations(AllReservations,ValidReservations),
     scheduler(ValidReservations,OptimalReservations),
     write('The best schedule is : '),nl,
-    write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
+    write('----------------------------------------------------------------------------------------------------------------------------------'),nl,nl,
 
     maplist(readable_reservation,OptimalReservations,BestSchedule),
     write('----------------------------------------------------------------------------------------------------------------------------------'),nl,!. % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
 
 
+test_all():-
+      SMSList = [[table,for,2,at,20,:,00,on,18,march],[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,5,people,on,the,18,th,of,march,for,the,standard,menu,please]],
+      test_constraints(SMSList,AllReservations,BestSchedule).
