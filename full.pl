@@ -222,14 +222,6 @@ table(3, 4).
 duration(standard, 60).
 duration(theater, 30).
 
-% reservation predicate is going to be used as a datastructure for storing the reservation information : it also contains the constraints for the reservations information.
-reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
-    reservation_constraints([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
-    meal_duration_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
-    table_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
-    label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
-
-
 
 reservation_constraints([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
     % reservation opening time is 19:00 and closing time is 23:00
@@ -245,8 +237,6 @@ reservation_constraints([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, E
     NumberOfPeople in 1..4,
     % table number is between 1 and 3 (inclusive)
     TableNumber in 1..3,
-
-
     % the reservation must be for today or tomorrow
     Day in 1..31,
     Month in 1..12,
@@ -271,9 +261,20 @@ table_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, Expected
         NumberOfPeople #=< NumberOfSeats.
 
 
+% reservation predicate is going to be used as a datastructure for storing the reservation information : it also contains the constraints for the reservations information.
+reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
+    reservation_constraints([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
+    meal_duration_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
+    table_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
+    label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
+
+
+
  % this is a datastrucutre for storing the reservations  (list of reservation list)
   reservations(AllReservations):-
     maplist(reservation, AllReservations).
+
+    
     
 % ---------------------------------------------------------------------------------------------------------------%
 % scheduler module : this module is going to be used for scheduling the reservations
@@ -320,15 +321,8 @@ combination(N, [X|Xs], [X|Ys]) :-
     set_prolog_flag(answer_write_options,[max_depth(0)]), % disable answer depth limit for printing the whole results
     % actual code
     subseq0(Reservations, MaxList),
-    %write('MaxList: '),
-
-    reservations(MaxList),
-    %write(MaxList),nl,
-
     schedule(MaxList).
-    %total_seats(MaxList, TotalSeats),
-    %labeling([max(TotalSeats)], [TotalSeats]),
-    %write('TotalSeats: '),write(TotalSeats),nl.
+
 
 total_seats(Reservations, TotalSeats) :-
   maplist(number_of_seats, Reservations, Seats),
@@ -370,11 +364,11 @@ valid_reservations(AllReservations,ValidReservations) :-
     include(reservation_constraints,AllReservations,ValidReservations).
 
 
-full_test(SMSList,BestSchedule):-
+    test_constraints(SMSList,AllReservations,BestSchedule):-
+    % this scheduler tries to fit as many reservations as possible in the schedule.
     test_dcg_list(SMSList,AllReservations),
     valid_reservations(AllReservations,ValidReservations),
     scheduler(ValidReservations,OptimalReservations),
-
     write('The best schedule is : '),nl,
     write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
 
