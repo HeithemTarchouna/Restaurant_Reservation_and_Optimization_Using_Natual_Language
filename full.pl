@@ -164,14 +164,8 @@ convert_to_standard_time(Hour, Minute, StandardHour, StandardMinute) :-
 valid_date(Year, Month, Day,MonthNum) :-
     ((number(Month),MonthNum = Month) ; convert_month(MonthNum, Month)),
     number(Year),
-    number(Day),
-    Day >= 0,
-    MonthNum >= 1,
-    MonthNum =< 12,
-    Year >= 1990,
-    Year =< 2025,
-    days_in_month(Year, MonthNum, NumDays),
-    Day =< NumDays.
+    number(Day).
+
 
 
 
@@ -297,6 +291,17 @@ reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, 
   duration(MealType, Duration),
   ExpectedEnd #= TimeInMinutes + Duration,
   ExpectedEnd #=< 1380,
+  % the reservation must be for today or tomorrow
+  Day in 1..31,
+  Month in 1..12,
+  Year in 2020..2025,
+  % this is to make sure that the reservation is not for today (because we are not going to accept reservations for the same day as the reservation must be made at least one day in advance)
+  today_date(TodayYear,TodayMonth,TodayDay),
+  date(Year,Month,Day) \= date(TodayYear,TodayMonth,TodayDay), 
+  % this is to make sure that someone doesn't order a reservation for a day that doesn't exist (29th of February for example for a non-leap year or 31st of April for example)
+  days_in_month(Year, Month, NumDays),
+  Day #=< NumDays,
+
   label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
 
 
@@ -401,14 +406,26 @@ readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Mea
 % uses the test_dcg_list predicate to convert the list of sms to a list of reservations
 % which can then be used by the scheduler module
 full_test(SMSList,BestSchedule):-
-    write('The best schedule is : '),nl,
-    write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
 
     test_dcg_list(SMSList,AllReservations),
+    % generates all possible combinations of reservations
     test(AllReservations,OptimalReservations),
-    maplist(readable_reservation,OptimalReservations,BestSchedule),
+    length(OptimalReservations, LengthOptimalReservations),
+    length(AllReservations, LengthAllReservations),
+    
+
+
+    write('The best schedule is : '),nl,
     write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
-    !. % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
+    maplist(readable_reservation,OptimalReservations,BestSchedule),
+    write('----------------------------------------------------------------------------------------------------------------------------------'),nl.
+
+
+
+
+
+
+    % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
 
 %full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
 %full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
