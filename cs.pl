@@ -196,17 +196,6 @@ today_date(Y,M,D) :-
     date_time_value(date, DateTime, date(Y,M,D)).
 
 %---------------------------------------------------------------------------------------------------------------%
-% test_dcg
-
-
-test_dcg(SMS,[Year,Month,Day,Hour, Minute, TimeInMinutes, ExpectedEnd, Meal, Customers_number, TableNumber]) :-
-    phrase(reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]), SMS,[]).
-    
-%---------------------------------------------------------------------------------------------------------------%
-%reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal],[please,can,we,have,a,table,for,3,for,the,theatre,menu,on,march,18,th],[]).
-
-test_dcg_list(SMSList,ResultList) :-
-    maplist(test_dcg,SMSList,ResultList).% prevent backtracking and getting the same answer multiple times
 
 
 %---------------------------------------------------------------------------------------------------------------%
@@ -317,6 +306,19 @@ combination(N, [X|Xs], [X|Ys]) :-
   N > 0,
   combination(N, Xs, Ys).
 
+% subseq0(List, Subsets): true if Subsets is a subset of List
+% credits to 
+%https://stackoverflow.com/questions/4912869/subsets-in-prolog
+subseq0(List, List).
+subseq0(List, Rest) :-
+      subseq1(List, Rest).
+
+subseq1([_|Tail], Rest) :-
+      subseq0(Tail, Rest).
+subseq1([Head|Tail], [Head|Rest]) :-
+      subseq1(Tail, Rest).
+
+% ---------------------------------------------------------------------------------------------------------------%
   scheduler(Reservations, MaxList) :-
     set_prolog_flag(answer_write_options,[max_depth(0)]), % disable answer depth limit for printing the whole results
     % actual code
@@ -324,26 +326,10 @@ combination(N, [X|Xs], [X|Ys]) :-
     schedule(MaxList).
 
 
-total_seats(Reservations, TotalSeats) :-
-  maplist(number_of_seats, Reservations, Seats),
-  sumlist(Seats, TotalSeats).
 
-number_of_seats(Reservation, NumberOfSeats) :-
-  Reservation = [_,_,_,_, _, _, _, _, NumberOfSeats, _].
-
-% subseq0(List, Subsets): true if Subsets is a subset of List
-% credits to 
-%https://stackoverflow.com/questions/4912869/subsets-in-prolog
-subseq0(List, List).
-subseq0(List, Rest) :-
- subseq1(List, Rest).
-
-subseq1([_|Tail], Rest) :-
- subseq0(Tail, Rest).
-subseq1([Head|Tail], [Head|Rest]) :-
- subseq1(Tail, Rest).
-
-% ---------------------------------------------------------------------------------------------------------------%
+%filter the list of reservations to get the reservations that are valid using the include predicate
+valid_reservations(AllReservations,ValidReservations) :-
+      include(reservation_constraints,AllReservations,ValidReservations).
 
 % a predicate to convert the list of reservations to a list of readable reservations that are displayed to the user
 readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Meal,NumberOfPeople,TableNumber],[date(Year,Month,Day),start_Time(Hour,Minute),end_Time(EndHour,EndMinute),meal(Meal),numberOfCustomers(NumberOfPeople),tableNumber(TableNumber)]) :-
@@ -358,13 +344,24 @@ readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Mea
 % uses the test_dcg_list predicate to convert the list of sms to a list of reservations
 % which can then be used by the scheduler module
 
-%filter the list of reservations to get the reservations that are valid using the include predicate
-
-valid_reservations(AllReservations,ValidReservations) :-
-    include(reservation_constraints,AllReservations,ValidReservations).
 
 
-    test_constraints(SMSList,AllReservations,BestSchedule):-
+
+
+
+
+test_dcg(SMS,[Year,Month,Day,Hour, Minute, TimeInMinutes, ExpectedEnd, Meal, Customers_number, TableNumber]) :-
+      phrase(reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]), SMS,[]).
+      
+  
+test_dcg_list(SMSList,ResultList) :-
+      maplist(test_dcg,SMSList,ResultList).% prevent backtracking and getting the same answer multiple times
+  
+
+
+
+
+test_constraints(SMSList,AllReservations,BestSchedule):-
     % this scheduler tries to fit as many reservations as possible in the schedule.
     test_dcg_list(SMSList,AllReservations),
     valid_reservations(AllReservations,ValidReservations),
