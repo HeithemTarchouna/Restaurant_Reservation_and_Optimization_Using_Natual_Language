@@ -351,7 +351,7 @@ combination(N, [X|Xs], [X|Ys]) :-
   N > 0,
   combination(N, Xs, Ys).
 
-test(Reservations, MaxList) :-
+schedule(Reservations, MaxList) :-
     % https://stackoverflow.com/questions/8231762/swi-prolog-show-long-list 
     set_prolog_flag(answer_write_options,[max_depth(0)]), % disable answer depth limit for printing the whole results
     % actual code
@@ -406,25 +406,16 @@ readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Mea
 % uses the test_dcg_list predicate to convert the list of sms to a list of reservations
 % which can then be used by the scheduler module
 full_test(SMSList,BestSchedule):-
-
     test_dcg_list(SMSList,AllReservations),
-    % generates all possible combinations of reservations
-    test(AllReservations,OptimalReservations),
-    length(OptimalReservations, LengthOptimalReservations),
-    length(AllReservations, LengthAllReservations),
-    
+    schedule(AllReservations,OptimalReservations),
 
 
     write('The best schedule is : '),nl,
     write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
+
+
     maplist(readable_reservation,OptimalReservations,BestSchedule),
     write('----------------------------------------------------------------------------------------------------------------------------------'),nl.
-
-
-
-
-
-
     % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
 
 %full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
