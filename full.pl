@@ -25,8 +25,6 @@ oclock --> [oclock].
 oclock --> [].
 
 
-
-
 % logic rules
 customer_number(CustomerNumber) --> [CustomerNumber], {integer(CustomerNumber)}.
 done --> ['.'].
@@ -75,17 +73,13 @@ res_date(Y,MonthNum,D) --> [M],the,[D],th,of,[Y],{valid_date(Y, M, D,MonthNum)}.
 res_date(Y,MonthNum,D) --> [M],the,[D],th,{tomorrow_date(Y,_,_),valid_date(Y, M, D,MonthNum)}.% assume it's the year of tommorrow's date if year is not specified 
 res_date(Y,MonthNum,D) --> [],{tomorrow_date(Y,MonthNum,D)}. % assume tomorrow if date is not specified
 
-
-
 %---------------------------------------Greetings and booking starters-------------------------------------------%
 
 intro --> [Atom], { member(Atom,[a,at,table]) }.
 intro --> [Atom], { \+integer(Atom) }.
 
 %---------------------------------------------------------------------------------------------------------------%
-%table_reservation(T,[a,table,for,3,people],[]).
-%table_reservation(T,[a,table,for,3],[]).   
-%table_reservation(T,[a,table, for, 3],[]).  
+% grammar rules
 
 reservation_time(Hour,Minute) --> preferably,at, res_time(Hour,Minute).
 
@@ -98,13 +92,7 @@ table_reservation(Customers_number) --> for,party_of,customer_number(Customers_n
 
 
 reservation_meal(Meal) --> preferably,for,the,[Meal],{member(Meal,['standard','theater'])},[menu].
-reservation_meal(standard) --> [].
-
-
-
-
-
-
+reservation_meal(standard) --> []. % assume standard if meal is not specified
 
 %---------------------------------------------------------------------------------------------------------------%
 % valid reservations
@@ -127,35 +115,15 @@ reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number])  --> a,[table],r
 % time predicates
 time(Hour, Minute) :-
     integer(Hour),
-    %Hour >= 19,
-    %Hour =< 22,
     integer(Minute),
     Hour >= 12.
-    %Minute >= 0,
-    %Minute =< 59.
-
 % tests if valid time (when the restaurant is open) and then converts to 24 hour format and stores it in S_H:S_M : S_H is the hour in 24 hour format and S_M is the minute
 time_pm(Hour, Minute,S_H,S_M) :-
     integer(Hour),
-    %Hour >= 7,
     Hour =< 12,
     integer(Minute),
-    %Minute >= 0,
-    %Minute =< 59,
     S_H is Hour + 12,
     S_M = Minute.
-
-    
-% convert_to_standard_time(Hour, Minute,StandardHour,StandardMinute): converts Hour:Minute to 24 hour format and stores it in StandardHour:StandardMinute
-convert_to_standard_time(Hour, Minute, StandardHour, StandardMinute) :-
-    integer(Hour),
-    between(1, 12, Hour),
-    integer(Minute),
-    between(0, 59, Minute),
-    StandardHour is Hour + 12,
-    StandardMinute = Minute,
-    between(19, 22, StandardHour).
-
 %---------------------------------------------------------------------------------------------------------------%
 
 % date predicates
@@ -165,9 +133,6 @@ valid_date(Year, Month, Day,MonthNum) :-
     ((number(Month),MonthNum = Month) ; convert_month(MonthNum, Month)),
     number(Year),
     number(Day).
-
-
-
 
 
 convert_month(1, january).
@@ -189,7 +154,6 @@ days_in_month(_, Month, NumDays) :-
     month_length(Month, NumDays).
     
 
-
 days_in_month(Year, 2, NumDays) :-
 
     leap_year(Year),
@@ -202,8 +166,6 @@ days_in_month(Year, 2, NumDays) :-
 
 leap_year(Year) :-
     Year mod 4 =:= 0.
-
-
 
 % month_length(Month, NumDays)
 month_length(1, 31).
@@ -233,28 +195,18 @@ today_date(Y,M,D) :-
     stamp_date_time(Timestamp, DateTime, local),
     date_time_value(date, DateTime, date(Y,M,D)).
 
-
-
-
 %---------------------------------------------------------------------------------------------------------------%
 % test_dcg
 
 
 test_dcg(SMS,[Year,Month,Day,Hour, Minute, TimeInMinutes, ExpectedEnd, Meal, Customers_number, TableNumber]) :-
     phrase(reservation([Year,Month,Day,Hour,Minute,Meal,Customers_number]), SMS,[]).
-    %write('Hour : '),write(Hour),nl,
-    %write('Minute : '),write(Minute),nl,
-    %write('Year : '),write(Year),nl,
-    %write('Month : '),write(Month),nl,
-    %write('Day : '),write(Day),nl,
-    %write('Customers_number : '),write(Customers_number),nl,
-    %write('Meal : '),write(Meal),nl, !. % the reason for this cut here is because we want to stop the program from backtracking and printing the same result multiple times.(the reason for this behaviour is the reservation predicate is recursive, so it can continue looking for more matches until the intro words are all found.)
-
+    
 %---------------------------------------------------------------------------------------------------------------%
 %reservation([Hour,Minute,Year,Month,Day,Customers_number,Meal],[please,can,we,have,a,table,for,3,for,the,theatre,menu,on,march,18,th],[]).
 
 test_dcg_list(SMSList,ResultList) :-
-    maplist(test_dcg,SMSList,ResultList).
+    maplist(test_dcg,SMSList,ResultList).% prevent backtracking and getting the same answer multiple times
 
 
 %---------------------------------------------------------------------------------------------------------------%
@@ -272,48 +224,57 @@ duration(theater, 30).
 
 % reservation predicate is going to be used as a datastructure for storing the reservation information : it also contains the constraints for the reservations information.
 reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
-  % reservation opening time is 19:00 and closing time is 23:00
-  % 19:00 = 19*60 + 0 = 1140
-  % 23:00 = 23*60 + 0 = 1380
-  StartHour in 19..23,
-  StartMinute in 0..59,
-  TimeInMinutes #= StartHour*60 + StartMinute,
-  % meal type is either standard or theater
-  member(MealType, [standard, theater]),
-  % number of people is between 1 and 4 (inclusive)
-  NumberOfPeople in 1..4,
-  % table number is between 1 and 3 (inclusive)
-  TableNumber in 1..3,
-  % the number of people must be less than or equal to the number of seats for the table
-  table(TableNumber, NumberOfSeats),
-  NumberOfPeople #=< NumberOfSeats,
-  % the duration of the meal must be less than or equal to the time left before closing time
-  duration(MealType, Duration),
-  ExpectedEnd #= TimeInMinutes + Duration,
-  ExpectedEnd #=< 1380,
-  % the reservation must be for today or tomorrow
-  Day in 1..31,
-  Month in 1..12,
-  Year in 2020..2025,
-  % this is to make sure that the reservation is not for today (because we are not going to accept reservations for the same day as the reservation must be made at least one day in advance)
-  today_date(TodayYear,TodayMonth,TodayDay),
-  date(Year,Month,Day) \= date(TodayYear,TodayMonth,TodayDay), 
-  % this is to make sure that someone doesn't order a reservation for a day that doesn't exist (29th of February for example for a non-leap year)
-  days_in_month(Year, Month, NumDays),
-  Day #=< NumDays,
+    reservation_constraints([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
+    meal_duration_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
+    table_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]),
+    label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
 
 
 
+reservation_constraints([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]) :-
+    % reservation opening time is 19:00 and closing time is 23:00
+    % 19:00 = 19*60 + 0 = 1140
+    % 23:00 = 23*60 + 0 = 1380
+    StartHour in 19..23,
+    StartMinute in 0..59,
 
-  label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
+    TimeInMinutes #= StartHour*60 + StartMinute,
+    % meal type is either standard or theater
+    member(MealType, [standard, theater]),
+    % number of people is between 1 and 4 (inclusive)
+    NumberOfPeople in 1..4,
+    % table number is between 1 and 3 (inclusive)
+    TableNumber in 1..3,
+
+
+    % the reservation must be for today or tomorrow
+    Day in 1..31,
+    Month in 1..12,
+    Year in 2020..2025,
+    % this is to make sure that the reservation is not for today (because we are not going to accept reservations for the same day as the reservation must be made at least one day in advance)
+    today_date(TodayYear,TodayMonth,TodayDay),
+    date(Year,Month,Day) \= date(TodayYear,TodayMonth,TodayDay), 
+    % this is to make sure that someone doesn't order a reservation for a day that doesn't exist (29th of February for example for a non-leap year)
+    days_in_month(Year, Month, NumDays),
+    Day #=< NumDays.
+
+
+meal_duration_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]):-
+        % the duration of the meal must be less than or equal to the time left before closing time
+        duration(MealType, Duration),
+        ExpectedEnd #= TimeInMinutes + Duration,
+        ExpectedEnd #=< 1380.
+
+table_constraint([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, MealType, NumberOfPeople, TableNumber]):-
+        % the number of people must be less than or equal to the number of seats for the table
+        table(TableNumber, NumberOfSeats),
+        NumberOfPeople #=< NumberOfSeats.
 
 
  % this is a datastrucutre for storing the reservations  (list of reservation list)
   reservations(AllReservations):-
     maplist(reservation, AllReservations).
     
-
-
 % ---------------------------------------------------------------------------------------------------------------%
 % scheduler module : this module is going to be used for scheduling the reservations
 
@@ -345,6 +306,7 @@ ensure_tables(AllReservations, [Reservation1, Reservation2]) :-
     Reservation2 = [Year2,Month2,Day2,_, _, TimeInMinutes2, ExpectedEnd2, _, _, TableNumber2],
       \+overlap(Year1,Month1,Day1,TimeInMinutes1, ExpectedEnd1,Year2,Month2,Day2, TimeInMinutes2, ExpectedEnd2).
 
+% https://stackoverflow.com/questions/53668887/a-combination-of-a-list-given-a-length-followed-by-a-permutation-in-prolog  credit to the author
 combination(0, _, []).
 combination(N, [X|Xs], [X|Ys]) :-
   N > 0,
@@ -354,16 +316,19 @@ combination(N, [X|Xs], [X|Ys]) :-
   N > 0,
   combination(N, Xs, Ys).
 
-test(Reservations, MaxList) :-
-    % https://stackoverflow.com/questions/8231762/swi-prolog-show-long-list 
+  scheduler(Reservations, MaxList) :-
     set_prolog_flag(answer_write_options,[max_depth(0)]), % disable answer depth limit for printing the whole results
     % actual code
     subseq0(Reservations, MaxList),
+    %write('MaxList: '),
+
     reservations(MaxList),
-    schedule(MaxList),
-    total_seats(MaxList, TotalSeats),
-    findall(Var, member([_,_,_,_, _, _, _, _, _, Var], MaxList), Vars),
-    labeling([max(TotalSeats)], Vars).
+    %write(MaxList),nl,
+
+    schedule(MaxList).
+    %total_seats(MaxList, TotalSeats),
+    %labeling([max(TotalSeats)], [TotalSeats]),
+    %write('TotalSeats: '),write(TotalSeats),nl.
 
 total_seats(Reservations, TotalSeats) :-
   maplist(number_of_seats, Reservations, Seats),
@@ -384,11 +349,7 @@ subseq1([_|Tail], Rest) :-
 subseq1([Head|Tail], [Head|Rest]) :-
  subseq1(Tail, Rest).
 
-
 % ---------------------------------------------------------------------------------------------------------------%
-
- %test([[2021,06,17,19,20,Start,End,theater,2,Table2],[2021,06,17,X,Y,Start2,End2,standard,2,Table]],Reservation).
-
 
 % a predicate to convert the list of reservations to a list of readable reservations that are displayed to the user
 readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Meal,NumberOfPeople,TableNumber],[date(Year,Month,Day),start_Time(Hour,Minute),end_Time(EndHour,EndMinute),meal(Meal),numberOfCustomers(NumberOfPeople),tableNumber(TableNumber)]) :-
@@ -397,26 +358,27 @@ readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Mea
     EndMinute #= EndInMinutes mod 60,
     format(' ~w | between : ~w and ~w | for the ~w menu | on table ~w |for ~w customers  ~n~n',[date(Year,Month,Day) , start_Time(Hour,Minute), end_Time(EndHour,EndMinute),Meal,TableNumber,NumberOfPeople]), nl.
     
-
-
-
-
-
-
 % ---------------------------------------------------------------------------------------------------------------%
 % test module : this module is going to be used for testing the scheduler module
 % combines all code together
 % uses the test_dcg_list predicate to convert the list of sms to a list of reservations
 % which can then be used by the scheduler module
+
+%filter the list of reservations to get the reservations that are valid using the include predicate
+
+valid_reservations(AllReservations,ValidReservations) :-
+    include(reservation_constraints,AllReservations,ValidReservations).
+
+
 full_test(SMSList,BestSchedule):-
     test_dcg_list(SMSList,AllReservations),
-    test(AllReservations,OptimalReservations),
+    valid_reservations(AllReservations,ValidReservations),
+    scheduler(ValidReservations,OptimalReservations),
+
     write('The best schedule is : '),nl,
     write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
 
-
     maplist(readable_reservation,OptimalReservations,BestSchedule),
-    write('----------------------------------------------------------------------------------------------------------------------------------'),nl. % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
+    write('----------------------------------------------------------------------------------------------------------------------------------'),nl,!. % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
 
-%full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
-%full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
+
