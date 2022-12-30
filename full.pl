@@ -298,9 +298,12 @@ reservation([Year,Month,Day,StartHour, StartMinute, TimeInMinutes, ExpectedEnd, 
   % this is to make sure that the reservation is not for today (because we are not going to accept reservations for the same day as the reservation must be made at least one day in advance)
   today_date(TodayYear,TodayMonth,TodayDay),
   date(Year,Month,Day) \= date(TodayYear,TodayMonth,TodayDay), 
-  % this is to make sure that someone doesn't order a reservation for a day that doesn't exist (29th of February for example for a non-leap year or 31st of April for example)
+  % this is to make sure that someone doesn't order a reservation for a day that doesn't exist (29th of February for example for a non-leap year)
   days_in_month(Year, Month, NumDays),
   Day #=< NumDays,
+
+
+
 
   label([StartHour, StartMinute, TimeInMinutes, ExpectedEnd,TableNumber]).
 
@@ -351,7 +354,7 @@ combination(N, [X|Xs], [X|Ys]) :-
   N > 0,
   combination(N, Xs, Ys).
 
-schedule(Reservations, MaxList) :-
+test(Reservations, MaxList) :-
     % https://stackoverflow.com/questions/8231762/swi-prolog-show-long-list 
     set_prolog_flag(answer_write_options,[max_depth(0)]), % disable answer depth limit for printing the whole results
     % actual code
@@ -407,16 +410,13 @@ readable_reservation([Year,Month,Day,Hour,Minute,StartInMinutes,EndInMinutes,Mea
 % which can then be used by the scheduler module
 full_test(SMSList,BestSchedule):-
     test_dcg_list(SMSList,AllReservations),
-    schedule(AllReservations,OptimalReservations),
-
-
+    test(AllReservations,OptimalReservations),
     write('The best schedule is : '),nl,
     write('----------------------------------------------------------------------------------------------------------------------------------'),nl,
 
 
     maplist(readable_reservation,OptimalReservations,BestSchedule),
-    write('----------------------------------------------------------------------------------------------------------------------------------'),nl.
-    % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
+    write('----------------------------------------------------------------------------------------------------------------------------------'),nl. % cut to avoid backtracking and printing multiple schedules (all valid schedules but not needed , if you backtrack you get the second best optimal schedule)
 
 %full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
 %full_test([[please,can,we,have,a,table,for,3,for,the,theater,menu,on,march,18,th],[can,i,book,a,table,at,9,pm,for,2,people,on,the,18,th,of,march,for,the,standard,menu,please]],Reservation). 
